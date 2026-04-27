@@ -1,15 +1,15 @@
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Storage;
 using Services;
 using Services.Interfaces;
+using Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddEnvironmentVariables();
-
 Env.Load(Path.Combine(builder.Environment.ContentRootPath, "..", ".env"));
+
+builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -38,7 +38,15 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Frontend", policy =>
     {
         policy
-            .AllowAnyOrigin()
+            .SetIsOriginAllowed(origin =>
+            {
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                {
+                    return false;
+                }
+
+                return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -47,6 +55,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseSwagger();
+
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "Delivery API v1");
@@ -55,8 +64,7 @@ app.UseSwaggerUI(options =>
 
 app.UseCors("Frontend");
 
-app.UseHttpsRedirection();
-
 app.MapControllers();
 
 app.Run();
+

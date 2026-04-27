@@ -1,0 +1,41 @@
+﻿services:
+  postgres:
+    image: postgres:17
+    container_name: order-db
+    restart: always
+    env_file:
+      - backend/.env
+    ports:
+      - "5442:5432"
+    volumes:
+      - order_pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: order-backend
+    restart: always
+    env_file:
+      - backend/.env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+    ports:
+      - "5047:8080"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: order-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  order_pgdata:
